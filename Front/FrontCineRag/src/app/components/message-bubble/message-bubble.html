@@ -1,0 +1,13 @@
+<div class="bubble" [class.bubble--user]="message.role === 'user'">
+    <div class="bubble__content">
+        <ng-container *ngIf="message.isLoading; else text">
+            <span class="bubble__dot"></span><span class="bubble__dot"></span><span class="bubble__dot"></span>
+        </ng-container>
+        <ng-template #text>{{ message.content }}</ng-template>
+    </div>
+
+    <div class="bubble__sources" *ngIf="message.sources?.length">
+        <span class="bubble__sources-label">Sources :</span>
+        <span class="bubble__source" *ngFor="let source of message.sources">{{ source }}</span>
+    </div>
+</div>

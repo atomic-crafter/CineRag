@@ -1,0 +1,127 @@
+.panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    &__header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e4ea;
+
+        h2 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        p {
+            margin: 4px 0 0;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+    }
+
+    &__dropzone {
+        margin: 16px;
+        padding: 20px;
+        border: 2px dashed #d1d5db;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6b7280;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: border-color 0.15s, background 0.15s;
+
+        &:hover,
+        &--active {
+            border-color: #6366f1;
+            background: #f5f5ff;
+        }
+    }
+
+    &__dropzone-hint {
+        font-size: 0.7rem;
+        color: #9ca3af;
+    }
+
+    &__list {
+        list-style: none;
+        margin: 0;
+        padding: 0 12px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:hover {
+            background: #f5f6fa;
+        }
+    }
+
+    &__item-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__item-name {
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__item-meta {
+        font-size: 0.7rem;
+        color: #9ca3af;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    &__badge {
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-size: 0.65rem;
+
+        &--uploading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        &--error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    }
+
+    &__delete {
+        border: none;
+        background: transparent;
+        color: #9ca3af;
+        cursor: pointer;
+        font-size: 0.9rem;
+
+        &:hover {
+            color: #ef4444;
+        }
+    }
+
+    &__empty {
+        margin: auto;
+        color: #9ca3af;
+        font-size: 0.85rem;
+    }
+}
