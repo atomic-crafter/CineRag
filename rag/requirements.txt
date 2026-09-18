@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+psycopg[binary,pool]
+sentence-transformers
+pypdf
+python-pptx
+langchain-text-splitters
+httpx
+python-dotenv
