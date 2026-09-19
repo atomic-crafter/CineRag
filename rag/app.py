@@ -7,6 +7,7 @@ import db
 import vectorstore
 from chunker import chunk_document
 from embeddings import embed_texts
+from generator import generate_answer
 from loaders import load_document
 
 
@@ -71,3 +72,34 @@ class DeleteResponse(BaseModel):
 def delete_ingest(file_id: str):
     chunks_removed = vectorstore.delete_document(file_id)
     return DeleteResponse(status="deleted", file_id=file_id, chunks_removed=chunks_removed)
+
+
+class QueryRequest(BaseModel):
+    question: str
+    top_k: int = 5
+
+
+class Source(BaseModel):
+    file_id: str
+    filename: str
+    page: int | None
+    snippet: str
+
+
+class QueryResponse(BaseModel):
+    answer: str
+    sources: list[Source]
+
+
+@app.post("/query", response_model=QueryResponse)
+def query(req: QueryRequest):
+    query_embedding = embed_texts([req.question])[0]
+    results = vectorstore.search(query_embedding, top_k=req.top_k)
+
+    answer = generate_answer(req.question, results)
+
+    sources = [
+        Source(file_id=r.file_id, filename=r.filename, page=r.page_number, snippet=r.chunk_text)
+        for r in results
+    ]
+    return QueryResponse(answer=answer, sources=sources)
