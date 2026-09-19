@@ -3,6 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import vectorstore
 from chunker import chunk_document
 from loaders import load_document
 
@@ -56,6 +57,37 @@ def test_chunk_document_empty_pages_produce_no_chunks():
 
 
 
+def test_ingest_query_delete_roundtrip(client, tmp_path):
+    file_id = "test-ingest-roundtrip"
+    vectorstore.delete_document(file_id)  # clean slate in case of leftovers
+
+    pdf_path = _make_sample_pdf(tmp_path)
+    resp = client.post(
+        "/ingest",
+        json={"file_id": file_id, "filename": "sample.pdf", "file_path": str(pdf_path)},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body == {"status": "success", "file_id": file_id, "chunks_added": 1}
+
+    # re-ingesting the same file_id replaces rather than duplicates chunks
+    resp = client.post(
+        "/ingest",
+        json={"file_id": file_id, "filename": "sample.pdf", "file_path": str(pdf_path)},
+    )
+    assert resp.json()["chunks_added"] == 1
+
+    resp = client.delete(f"/ingest/{file_id}")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "deleted", "file_id": file_id, "chunks_removed": 1}
+
+
+def test_ingest_missing_file_returns_404(client):
+    resp = client.post(
+        "/ingest",
+        json={"file_id": "missing", "filename": "x.pdf", "file_path": "/no/such/file.pdf"},
+    )
+    assert resp.status_code == 404
 
 
 def _make_sample_pdf(tmp_path) -> Path:
