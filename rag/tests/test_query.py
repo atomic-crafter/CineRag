@@ -66,6 +66,22 @@ def test_query_returns_answer_and_sources(client, seeded_docs, monkeypatch):
     assert captured["question"] == "How do rockets get to orbit?"
 
 
+def test_query_filters_by_file_ids(client, seeded_docs, monkeypatch):
+    monkeypatch.setattr(app_module, "generate_answer", lambda q, r: "stub answer")
+
+    resp = client.post(
+        "/query",
+        json={
+            "question": "How do rockets get to orbit?",
+            "top_k": 5,
+            "file_ids": ["q-doc-cats"],
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["sources"]) == 1
+    assert body["sources"][0]["file_id"] == "q-doc-cats"
+
 
 def test_build_prompt_includes_context_and_question():
     results = [

@@ -77,6 +77,7 @@ def delete_ingest(file_id: str):
 class QueryRequest(BaseModel):
     question: str
     top_k: int = 5
+    file_ids: list[str] | None = None
 
 
 class Source(BaseModel):
@@ -94,7 +95,7 @@ class QueryResponse(BaseModel):
 @app.post("/query", response_model=QueryResponse)
 def query(req: QueryRequest):
     query_embedding = embed_texts([req.question])[0]
-    results = vectorstore.search(query_embedding, top_k=req.top_k)
+    results = vectorstore.search(query_embedding, top_k=req.top_k, file_ids=req.file_ids)
 
     answer = generate_answer(req.question, results)
 
