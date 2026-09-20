@@ -1,7 +1,9 @@
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
+from starlette.responses import JSONResponse
 
 import db
 import vectorstore
@@ -9,6 +11,8 @@ from chunker import chunk_document
 from embeddings import embed_texts
 from generator import generate_answer
 from loaders import load_document
+
+API_KEY = os.environ["API_KEY"]
 
 
 @asynccontextmanager
@@ -19,6 +23,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.middleware("http")
+async def require_api_key(request: Request, call_next):
+    if request.url.path != "/health":
+        if request.headers.get("X-API-Key") != API_KEY:
+            return JSONResponse(status_code=401, content={"detail": "invalid or missing API key"})
+    return await call_next(request)
 
 
 @app.get("/health")

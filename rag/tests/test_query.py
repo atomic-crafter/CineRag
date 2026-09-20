@@ -11,6 +11,9 @@ import vectorstore
 from chunker import Chunk
 from embeddings import embed_texts
 
+API_KEY = "test-key"
+HEADERS = {"X-API-Key": API_KEY}
+
 
 @pytest.fixture
 def seeded_docs(client):
@@ -40,7 +43,22 @@ def seeded_docs(client):
         vectorstore.delete_document(file_id)
 
 
+def test_query_requires_api_key(client):
+    resp = client.post("/query", json={"question": "hi"})
+    assert resp.status_code == 401
 
+
+def test_query_rejects_wrong_api_key(client):
+    resp = client.post(
+        "/query", json={"question": "hi"}, headers={"X-API-Key": "wrong"}
+    )
+    assert resp.status_code == 401
+
+
+def test_health_does_not_require_api_key(client):
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
 
 
 def test_query_returns_answer_and_sources(client, seeded_docs, monkeypatch):
@@ -56,6 +74,7 @@ def test_query_returns_answer_and_sources(client, seeded_docs, monkeypatch):
     resp = client.post(
         "/query",
         json={"question": "How do rockets get to orbit?", "top_k": 2},
+        headers=HEADERS,
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -76,6 +95,7 @@ def test_query_filters_by_file_ids(client, seeded_docs, monkeypatch):
             "top_k": 5,
             "file_ids": ["q-doc-cats"],
         },
+        headers=HEADERS,
     )
     assert resp.status_code == 200
     body = resp.json()

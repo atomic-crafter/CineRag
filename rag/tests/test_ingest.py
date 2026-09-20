@@ -7,6 +7,9 @@ import vectorstore
 from chunker import chunk_document
 from loaders import load_document
 
+API_KEY = "test-key"
+HEADERS = {"X-API-Key": API_KEY}
+
 
 def test_load_pdf(tmp_path):
     pdf_path = _make_sample_pdf(tmp_path)
@@ -56,6 +59,13 @@ def test_chunk_document_empty_pages_produce_no_chunks():
     assert chunk_document([(1, "   ")]) == []
 
 
+def test_ingest_requires_api_key(client):
+    resp = client.post(
+        "/ingest",
+        json={"file_id": "x", "filename": "x.pdf", "file_path": "/nonexistent.pdf"},
+    )
+    assert resp.status_code == 401
+
 
 def test_ingest_query_delete_roundtrip(client, tmp_path):
     file_id = "test-ingest-roundtrip"
@@ -65,6 +75,7 @@ def test_ingest_query_delete_roundtrip(client, tmp_path):
     resp = client.post(
         "/ingest",
         json={"file_id": file_id, "filename": "sample.pdf", "file_path": str(pdf_path)},
+        headers=HEADERS,
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -74,10 +85,11 @@ def test_ingest_query_delete_roundtrip(client, tmp_path):
     resp = client.post(
         "/ingest",
         json={"file_id": file_id, "filename": "sample.pdf", "file_path": str(pdf_path)},
+        headers=HEADERS,
     )
     assert resp.json()["chunks_added"] == 1
 
-    resp = client.delete(f"/ingest/{file_id}")
+    resp = client.delete(f"/ingest/{file_id}", headers=HEADERS)
     assert resp.status_code == 200
     assert resp.json() == {"status": "deleted", "file_id": file_id, "chunks_removed": 1}
 
@@ -86,6 +98,7 @@ def test_ingest_missing_file_returns_404(client):
     resp = client.post(
         "/ingest",
         json={"file_id": "missing", "filename": "x.pdf", "file_path": "/no/such/file.pdf"},
+        headers=HEADERS,
     )
     assert resp.status_code == 404
 
