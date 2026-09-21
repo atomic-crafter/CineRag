@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ChatMessage } from '../models/message';
+import { uuid } from '../utils/uuid';
 
 
 interface ChatResponse {
@@ -20,10 +21,10 @@ export class ChatService {
 
     sendMessage(content: string, selectedDocumentIds: string[]): void {
         const userMessage: ChatMessage = {
-            id: crypto.randomUUID(), role: 'user', content, timestamp: new Date()
+            id: uuid(), role: 'user', content, timestamp: new Date()
         };
         const loadingMessage: ChatMessage = {
-            id: crypto.randomUUID(), role: 'assistant', content: '', timestamp: new Date(), isLoading: true
+            id: uuid(), role: 'assistant', content: '', timestamp: new Date(), isLoading: true
         };
 
         this.messagesSubject.next([...this.messagesSubject.value, userMessage, loadingMessage]);

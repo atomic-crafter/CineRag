@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { RagDocument } from '../models/document';
+import { uuid } from '../utils/uuid';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
@@ -20,7 +21,7 @@ export class DocumentService {
   }
 
   uploadDocument(file: File): void {
-    const tempId = crypto.randomUUID();
+    const tempId = uuid();
     const tempDoc: RagDocument = {
       id: tempId,
       name: file.name,
