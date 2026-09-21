@@ -8,7 +8,7 @@ export class DocumentService {
   private documentsSubject = new BehaviorSubject<RagDocument[]>([]);
   documents$: Observable<RagDocument[]> = this.documentsSubject.asObservable();
 
-  private apiUrl = 'http://localhost:8000/api/documents';
+  private apiUrl = '/api/documents';
 
   constructor(private http: HttpClient) { }
 

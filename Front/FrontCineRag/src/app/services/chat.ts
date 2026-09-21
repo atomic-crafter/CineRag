@@ -14,7 +14,7 @@ export class ChatService {
     private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
     messages$: Observable<ChatMessage[]> = this.messagesSubject.asObservable();
 
-    private apiUrl = 'http://localhost:8000/api/chat';
+    private apiUrl = '/api/chat';
 
     constructor(private http: HttpClient) { }
 
