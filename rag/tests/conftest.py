@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -8,6 +9,7 @@ os.environ.setdefault("DATABASE_URL", "postgresql://rag:ragpass@localhost:5432/r
 os.environ.setdefault("API_KEY", "test-key")
 os.environ.setdefault("ZAI_API_KEY", "unused-in-tests")
 os.environ.setdefault("ZAI_BASE_URL", "http://unused.invalid")
+os.environ.setdefault("UPLOAD_DIR", tempfile.mkdtemp(prefix="rag-uploads-"))
 
 import pytest
 from fastapi.testclient import TestClient

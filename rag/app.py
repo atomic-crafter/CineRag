@@ -2,17 +2,19 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
 import db
 import vectorstore
-from chunker import chunk_document
+import webapi
 from embeddings import embed_texts
 from generator import generate_answer
-from loaders import load_document
+from ingestion import ingest_file
 
 API_KEY = os.environ["API_KEY"]
+CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:4200").split(",")
 
 
 @asynccontextmanager
@@ -27,10 +29,17 @@ app = FastAPI(lifespan=lifespan)
 
 @app.middleware("http")
 async def require_api_key(request: Request, call_next):
-    if request.url.path != "/health":
+    path = request.url.path
+    # /health is for container probes; /api/* is the browser-facing UI layer (no key in the browser).
+    if path != "/health" and not path.startswith("/api/"):
         if request.headers.get("X-API-Key") != API_KEY:
             return JSONResponse(status_code=401, content={"detail": "invalid or missing API key"})
     return await call_next(request)
+
+
+# Added after the auth middleware so it is outermost and answers CORS preflights first.
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.include_router(webapi.router)
 
 
 @app.get("/health")
@@ -54,24 +63,13 @@ class IngestResponse(BaseModel):
 @app.post("/ingest", response_model=IngestResponse)
 def ingest(req: IngestRequest):
     try:
-        pages = load_document(req.file_path)
+        chunks_added = ingest_file(req.file_id, req.filename, req.file_path, req.s3_key)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"file not found: {req.file_path}")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    chunks = chunk_document(pages)
-
-    vectorstore.delete_chunks(req.file_id)
-    vectorstore.upsert_document(req.file_id, req.filename, req.s3_key, 0)
-
-    if chunks:
-        embeddings = embed_texts([c.chunk_text for c in chunks])
-        vectorstore.insert_chunks(req.file_id, chunks, embeddings)
-
-    vectorstore.upsert_document(req.file_id, req.filename, req.s3_key, len(chunks))
-
-    return IngestResponse(status="success", file_id=req.file_id, chunks_added=len(chunks))
+    return IngestResponse(status="success", file_id=req.file_id, chunks_added=chunks_added)
 
 
 class DeleteResponse(BaseModel):

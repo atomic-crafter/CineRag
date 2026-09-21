@@ -98,6 +98,23 @@ ingested documents.
 }
 ```
 
+## Web UI routes (`/api`)
+
+Used by the Angular frontend in `Front/FrontCineRag`. These routes are called from
+the browser, so they do **not** require `X-API-Key` (the browser can't hold a
+secret); CORS allows `http://localhost:4200` (override with `CORS_ORIGINS`).
+Uploaded files are stored in `UPLOAD_DIR` (default `/app/uploads`).
+
+| Route                       | Purpose                                                       |
+|-----------------------------|---------------------------------------------------------------|
+| `GET /api/documents`        | List documents                                                |
+| `POST /api/documents`       | Multipart upload (`file` field; `.pdf`, `.ppt`, `.pptx`), ingests it |
+| `DELETE /api/documents/{id}`| Delete a document and its stored file                         |
+| `POST /api/chat`            | `{"question": str, "documentIds": [str]}` -> `{"answer", "sources": [filenames]}` |
+
+Run the UI with `cd Front/FrontCineRag && npm ci && npx ng serve` (http://localhost:4200)
+while `docker compose up -d` is running.
+
 ## Environment variables
 
 See `.env.example`:

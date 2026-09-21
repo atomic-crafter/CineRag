@@ -60,6 +60,14 @@ def upsert_document(file_id: str, filename: str, s3_key: str | None, chunk_count
         conn.commit()
 
 
+def list_documents() -> list[tuple]:
+    with pool.connection() as conn:
+        cur = conn.execute(
+            "SELECT file_id, filename, uploaded_at FROM documents ORDER BY uploaded_at"
+        )
+        return cur.fetchall()
+
+
 def delete_document(file_id: str) -> int:
     with pool.connection() as conn:
         cur = conn.execute("SELECT chunk_count FROM documents WHERE file_id = %s", (file_id,))
