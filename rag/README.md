@@ -138,3 +138,23 @@ DATABASE_URL=postgresql://rag:ragpass@localhost:5432/ragdb \
 API_KEY=test-key ZAI_API_KEY=unused ZAI_BASE_URL=http://unused.invalid \
 pytest tests/ -v
 ```
+
+## Deploying to a single server (AWS EC2)
+
+`docker-compose.prod.yml` (repo root) runs `db`, `app` and `web` (nginx serving the
+Angular build and proxying `/api`). Only port 80 is exposed, behind a basic-auth
+password (username `epf`, password from `WEB_PASSWORD`).
+
+On the server (Docker + compose + buildx installed):
+
+```bash
+# repo root
+printf 'WEB_PASSWORD=choose-a-password\n' > .env
+cp rag/.env.example rag/.env      # then set API_KEY, and LLM_PROVIDER=bedrock
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+With `LLM_PROVIDER=bedrock` the API calls Amazon Bedrock (`BEDROCK_MODEL_ID`,
+`BEDROCK_REGION`) using the instance's IAM role, which needs
+`bedrock:InvokeModel`. The instance metadata hop limit must be 2 so containers can
+read the role credentials. Note the password is sent unencrypted without HTTPS.
