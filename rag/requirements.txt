@@ -7,5 +7,6 @@ pypdf
 python-pptx
 langchain-text-splitters
 httpx
+boto3
 python-multipart
 pytest
