@@ -73,7 +73,11 @@ def test_query_returns_answer_and_sources(client, seeded_docs, monkeypatch):
 
     resp = client.post(
         "/query",
-        json={"question": "How do rockets get to orbit?", "top_k": 2},
+        json={
+            "question": "How do rockets get to orbit?",
+            "top_k": 2,
+            "file_ids": ["q-doc-cats", "q-doc-rockets"],
+        },
         headers=HEADERS,
     )
     assert resp.status_code == 200
