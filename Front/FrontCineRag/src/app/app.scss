@@ -1,0 +1,31 @@
+.layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: #f5f6fa;
+
+    &__chat {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__panel {
+        width: 340px;
+        flex-shrink: 0;
+        border-left: 1px solid #e2e4ea;
+        background: #fff;
+    }
+}
+
+@media (max-width: 900px) {
+    .layout {
+        flex-direction: column;
+
+        &__panel {
+            width: 100%;
+            border-left: none;
+            border-top: 1px solid #e2e4ea;
+            max-height: 40vh;
+        }
+    }
+}

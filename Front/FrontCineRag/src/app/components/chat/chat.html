@@ -1,0 +1,22 @@
+<div class="chat">
+    <header class="chat__header">
+        <h1>Assistant RAG</h1>
+        <p>Posez une question sur vos documents sélectionnés</p>
+    </header>
+
+    <div class="chat__messages">
+        <div *ngIf="messages.length === 0" class="chat__empty">
+            Aucun message. Sélectionnez des documents à droite puis posez une question.
+        </div>
+
+        <app-message-bubble *ngFor="let message of messages" [message]="message"></app-message-bubble>
+        <div #scrollAnchor></div>
+    </div>
+
+    <footer class="chat__input">
+        <textarea [(ngModel)]="draft" (keydown)="onKeydown($event)"
+            placeholder="Écrivez votre question... (Entrée pour envoyer, Maj+Entrée pour un saut de ligne)"
+            rows="2"></textarea>
+        <button (click)="send()" [disabled]="!draft.trim()">Envoyer</button>
+    </footer>
+</div>

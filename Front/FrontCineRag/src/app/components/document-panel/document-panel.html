@@ -1,0 +1,35 @@
+<div class="panel">
+    <header class="panel__header">
+        <h2>Documents</h2>
+        <p>Sélectionnez les documents à utiliser pour le RAG</p>
+    </header>
+
+    <label class="panel__dropzone" [class.panel__dropzone--active]="isDragging" (drop)="onDrop($event)"
+        (dragover)="onDragOver($event)" (dragleave)="onDragLeave()">
+        <input type="file" multiple hidden (change)="onFileSelected($event)" />
+        <span>Glissez vos fichiers ici ou cliquez pour choisir</span>
+        <span class="panel__dropzone-hint">PDF, DOCX, TXT...</span>
+    </label>
+
+    <ul class="panel__list">
+        <li class="panel__item" *ngFor="let doc of documents" (click)="toggle(doc)">
+            <input type="checkbox" [checked]="doc.selected" [disabled]="doc.status === 'uploading'"
+                (click)="$event.stopPropagation(); toggle(doc)" />
+
+            <div class="panel__item-info">
+                <span class="panel__item-name">{{ doc.name }}</span>
+                <span class="panel__item-meta">
+                    {{ formatSize(doc.size) }}
+                    <ng-container [ngSwitch]="doc.status">
+                        <span *ngSwitchCase="'uploading'" class="panel__badge panel__badge--uploading">Envoi...</span>
+                        <span *ngSwitchCase="'error'" class="panel__badge panel__badge--error">Erreur</span>
+                    </ng-container>
+                </span>
+            </div>
+
+            <button class="panel__delete" (click)="remove(doc, $event)" title="Supprimer">✕</button>
+        </li>
+    </ul>
+
+    <div class="panel__empty" *ngIf="documents.length === 0">Aucun document pour le moment.</div>
+</div>
