@@ -1,7 +1,7 @@
 # Production stack for a single server (e.g. one EC2 instance):
 #   docker compose -f docker-compose.prod.yml up -d --build
 # Only the web container is published (port 80); db and app stay on the internal network.
-# Copy rag/.env.example to rag/.env first (LLM_PROVIDER=bedrock uses the instance's IAM role).
+# Create ./.env with WEB_PASSWORD=... (site password, username "epf") and copy rag/.env.example to rag/.env first (LLM_PROVIDER=bedrock uses the instance's IAM role).
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -35,7 +35,10 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./Front/FrontCineRag
+    build:
+      context: ./Front/FrontCineRag
+      args:
+        WEB_PASSWORD: ${WEB_PASSWORD:?set WEB_PASSWORD in .env}
     ports:
       - "80:80"
     depends_on:
