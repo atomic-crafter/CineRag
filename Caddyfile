@@ -1,0 +1,6 @@
+# Public entrance: obtains and renews the HTTPS certificate automatically, then
+# forwards everything to the nginx web container (which enforces the site password).
+{$SITE_ADDRESS} {
+	encode gzip
+	reverse_proxy web:80
+}

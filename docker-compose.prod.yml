@@ -1,0 +1,70 @@
+# Production stack for a single server (e.g. one EC2 instance):
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Only Caddy is published (80/443, automatic HTTPS); web, app and db stay on the internal network.
+# Create ./.env with WEB_PASSWORD=... (site password, username "epf") and SITE_ADDRESS=<hostname>
+# (e.g. 1-2-3-4.sslip.io or your domain, pointing at this server), and copy rag/.env.example to rag/.env first (LLM_PROVIDER=bedrock uses the instance's IAM role).
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragpass}
+      POSTGRES_DB: ragdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./rag/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d ragdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: ./rag
+    env_file:
+      - ./rag/.env
+    environment:
+      DATABASE_URL: postgresql://rag:${POSTGRES_PASSWORD:-ragpass}@db:5432/ragdb
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+      - hfcache:/root/.cache/huggingface
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./Front/FrontCineRag
+      args:
+        WEB_PASSWORD: ${WEB_PASSWORD:?set WEB_PASSWORD in .env}
+    expose:
+      - "80"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:
+  hfcache:
+  caddy_data:
+  caddy_config:
