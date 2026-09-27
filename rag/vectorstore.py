@@ -21,9 +21,14 @@ def delete_chunks(file_id: str) -> int:
         return cur.rowcount
 
 
+# Arbitrary constant, just needs to be the same value everywhere it's used.
+_REINDEX_LOCK_KEY = 727276
+
+
 def insert_chunks(file_id: str, chunks: list[Chunk], embeddings: list[list[float]]) -> int:
     with pool.connection() as conn:
         with conn.cursor() as cur:
+            was_empty = conn.execute("SELECT NOT EXISTS (SELECT 1 FROM chunks)").fetchone()[0]
             cur.executemany(
                 """
                 INSERT INTO chunks (file_id, chunk_index, page_number, chunk_text, embedding)
@@ -34,11 +39,37 @@ def insert_chunks(file_id: str, chunks: list[Chunk], embeddings: list[list[float
                     for c, embedding in zip(chunks, embeddings)
                 ],
             )
-        # The ivfflat index is built (with degenerate centroids) on an empty
-        # table at schema-init time, which silently drops rows from result
-        # sets until reindexed against real data. Cheap at this scale.
-        conn.execute("REINDEX INDEX idx_chunks_embedding")
         conn.commit()
+
+    # The ivfflat index is built (with degenerate centroids) on an empty
+    # table at schema-init time, which silently drops rows from result sets
+    # until reindexed against real data - so this only needs to run for the
+    # very first insert (was_empty), not on every upload: once the index has
+    # real data, ordinary ivfflat recall degrades gracefully instead of
+    # dropping rows outright. REINDEX CONCURRENTLY avoids the exclusive lock
+    # a plain REINDEX takes, which would otherwise stall every other query
+    # (chats included) while one upload reindexes - it must run outside a
+    # transaction, hence its own autocommit connection.
+    #
+    # pg_try_advisory_lock (never blocks), not pg_advisory_lock: if several
+    # first-uploads race, only the winner needs to reindex - it fixes the
+    # one shared index for everyone. A *blocking* lock here would deadlock:
+    # a backend parked waiting on pg_advisory_lock still holds an open
+    # snapshot, which is exactly what REINDEX CONCURRENTLY's "wait for old
+    # snapshots" phase then waits on - so the reindexer waits for the
+    # waiter, and the waiter waits for the reindexer. Confirmed by testing
+    # concurrent first-uploads before switching to try-lock.
+    if was_empty:
+        with pool.connection() as conn:
+            conn.autocommit = True
+            got_lock = conn.execute(
+                "SELECT pg_try_advisory_lock(%s)", (_REINDEX_LOCK_KEY,)
+            ).fetchone()[0]
+            if got_lock:
+                try:
+                    conn.execute("REINDEX INDEX CONCURRENTLY idx_chunks_embedding")
+                finally:
+                    conn.execute("SELECT pg_advisory_unlock(%s)", (_REINDEX_LOCK_KEY,))
     return len(chunks)
 
 
